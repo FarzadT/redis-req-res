@@ -40,9 +40,9 @@ RedisReqRes.prototype = {
     var data = {query: in_data, responseChannel: responseChannel};
 
     var that = this;
-    this.on(responseChannel, function(data){
+    this.on(responseChannel, function(error, data){
       that.off(responseChannel);
-      in_callback(data);
+      in_callback(error, data);
     });
 
     var requestChannel = this._pipeGuid + ':' + in_channel;
