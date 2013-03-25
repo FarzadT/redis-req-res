@@ -72,7 +72,7 @@ RedisReqRes.prototype = {
         this._callbacks[in_channel](req, res);
       }else{
         if(this._callbacks[in_channel]){
-          this._callbacks(JSON.parse(in_data));
+          this._callbacks[in_channel](JSON.parse(in_data));
         }
       }
     }
