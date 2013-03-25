@@ -35,7 +35,7 @@ RedisReqRes.prototype = {
   request: function(in_channel, in_data, in_callback){
     in_data = in_data || {};
 
-    var responseChannel = this._pipeGuid + ':RESPONSE:' + guid.new();
+    var responseChannel = 'RESPONSE:' + guid.new();
 
     var data = {query: in_data, responseChannel: responseChannel};
 
@@ -52,11 +52,11 @@ RedisReqRes.prototype = {
   _response: function(in_channel){
     var that = this;
     function response(in_responseChannel){
-      this._responseChannel;
+      this._responseChannel = in_responseChannel;
     };
 
     response.prototype.send = function(in_data){
-      that._pubClient.publish(this._responseChannel, JSON.stringify(in_data));
+      that._pubClient.publish(this._pipeGuid+':'+this._responseChannel, JSON.stringify(in_data));
     };
 
     return new response(in_channel);
