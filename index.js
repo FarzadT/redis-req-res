@@ -55,8 +55,9 @@ RedisReqRes.prototype = {
       this._responseChannel = in_responseChannel;
     };
 
-    response.prototype.send = function(in_data){
-      that._pubClient.publish(that._pipeGuid+':'+this._responseChannel, JSON.stringify(in_data));
+    response.prototype.send = function(error, in_data){
+      var data = {data: data, error: error};
+      that._pubClient.publish(that._pipeGuid+':'+this._responseChannel, JSON.stringify(data));
     };
 
     return new response(in_channel);
@@ -72,7 +73,8 @@ RedisReqRes.prototype = {
         this._callbacks[in_channel](req, res);
       }else{
         if(this._callbacks[in_channel]){
-          this._callbacks[in_channel](JSON.parse(in_data));
+          var data = JSON.parse(in_data);
+          this._callbacks[in_channel](data.error, data.data);
         }
       }
     }
