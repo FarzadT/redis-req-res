@@ -63,15 +63,17 @@ RedisReqRes.prototype = {
   },
 
   _handleRequest : function(in_channel, in_data){
-    if(in_channel.indexOf(':RESPONSE:') === -1){
-      var data = JSON.parse(in_data);
-      var req = {query: data.query};
-      var res = this._response(data.responseChannel);
+    if(in_channel.indexOf(this._pipeGuid) !== -1){
+      if(in_channel.indexOf(':RESPONSE:') === -1){
+        var data = JSON.parse(in_data);
+        var req = {query: data.query};
+        var res = this._response(data.responseChannel);
 
-      this._callbacks[in_channel](req, res);
-    }else{
-      if(this._callbacks[in_channel]){
-        this._callbacks(JSON.parse(in_data));
+        this._callbacks[in_channel](req, res);
+      }else{
+        if(this._callbacks[in_channel]){
+          this._callbacks(JSON.parse(in_data));
+        }
       }
     }
   }
