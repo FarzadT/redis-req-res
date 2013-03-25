@@ -56,7 +56,7 @@ RedisReqRes.prototype = {
     };
 
     response.prototype.send = function(error, in_data){
-      var data = {data: data, error: error};
+      var data = {data: in_data, error: error};
       that._pubClient.publish(that._pipeGuid+':'+this._responseChannel, JSON.stringify(data));
     };
 
