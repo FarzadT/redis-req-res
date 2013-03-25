@@ -9,7 +9,7 @@
     }
   , "author": "Farzad Towhidi"
   , "dependencies": {
-    "reds"        : "0.2.2",
+    "redis"       : "git://github.com/Reregistered/node_redis.git",
     "node-guid"   : "0.0.1"
   }
   , "main": "index"

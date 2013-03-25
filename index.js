@@ -62,7 +62,7 @@ RedisReqRes.prototype = {
     return new response(in_channel);
   },
 
-  _handleRequest = function(in_channel, in_data){
+  _handleRequest : function(in_channel, in_data){
     if(in_channel.indexOf(':RESPONSE:') === -1){
       var data = JSON.parse(in_data);
       var req = {query: data.query};
