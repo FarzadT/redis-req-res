@@ -9,14 +9,30 @@ function RedisReqRes (in_redisConfig) {
 
   this._callbacks = {};
 
-  var that = this;
-  this._subClient.on("message",function(channel, message){
-    that._handleRequest(channel, message)
-  });
 };
 
 RedisReqRes.prototype = {
+  init: function(in_callback){
+    var that = this;
+    
+    in_callback = in_callback || function(){};
+
+    this._subClient.on("connect", function(){
+      that._subClient.on("message",function(channel, message){
+        that._handleRequest(channel, message);
+      });
+
+      in_callback();
+    });
+
+    this._subClient.on("error",function(err){
+      throw err;
+    });
+  },
+
   on: function(in_channel, in_callback){
+    var that = this;
+
     var channel = this._pipeGuid+':'+in_channel;
 
     this._subClient.subscribe(channel);
