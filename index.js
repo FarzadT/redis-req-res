@@ -7,7 +7,14 @@ function RedisReqRes (in_redisConfig) {
 
   this._pipeGuid = 'e29a3a25-1fd9-4ade-a2a9-4c3829a87cd5';
 
+  this._myGuid = guid.new();
+
   this._callbacks = {};
+
+  var that = this;
+  process.on('exit', function(){
+    that._pubClient.srem([that._pipeGuid, that._myGuid]);
+  });
 
 };
 
@@ -21,6 +28,8 @@ RedisReqRes.prototype = {
       that._subClient.on("message",function(channel, message){
         that._handleRequest(channel, message);
       });
+
+      that._pubClient.sadd([that._pipeGuid, that._myGuid]);
 
       in_callback();
     });
@@ -56,13 +65,21 @@ RedisReqRes.prototype = {
     var data = {query: in_data, responseChannel: responseChannel};
 
     var that = this;
-    this.on(responseChannel, function(error, data){
-      that.off(responseChannel);
-      in_callback(error, data);
-    });
 
-    var requestChannel = this._pipeGuid + ':' + in_channel;
-    this._pubClient.publish(requestChannel, JSON.stringify(data));
+    this._pubClient.scard([this._pipeGuid], function(error, replies){
+      var reply = 0;
+      
+      this.on(responseChannel, function(error, data){
+        reply++;
+        if(reply === replies){
+          that.off(responseChannel);
+        }
+        in_callback(error, data);
+      });
+
+      var requestChannel = that._pipeGuid + ':' + in_channel;
+      that._pubClient.publish(requestChannel, JSON.stringify(data));
+    });
   },
 
   _response: function(in_channel){
