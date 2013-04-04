@@ -11,11 +11,14 @@ function RedisReqRes (in_redisConfig) {
 
   this._callbacks = {};
 
-  var that = this;
-  process.on('exit', function(){
-    that._pubClient.srem([that._pipeGuid, that._myGuid]);
-  });
+  var exitEvents = ['SIGHUP', 'SIGINT', 'SIGTERM', 'exit', 'uncaughtException'];
 
+  var that = this;
+  for(var i in exitEvents){
+    process.on(exitEvents[i], function(){
+      that._pubClient.srem([that._pipeGuid, that._myGuid]);
+    });
+  }
 };
 
 RedisReqRes.prototype = {
@@ -66,20 +69,21 @@ RedisReqRes.prototype = {
 
     var that = this;
 
-    this._pubClient.scard([this._pipeGuid], function(error, replies){
-      var reply = 0;
+    var reply = 0;
       
-      this.on(responseChannel, function(error, data){
+    this.on(responseChannel, function(error, data){
+      that._pubClient.scard([this._pipeGuid], function(error, replies){
         reply++;
         if(reply === replies){
           that.off(responseChannel);
         }
-        in_callback(error, data);
       });
 
-      var requestChannel = that._pipeGuid + ':' + in_channel;
-      that._pubClient.publish(requestChannel, JSON.stringify(data));
+      in_callback(error, data);
     });
+
+    var requestChannel = this._pipeGuid + ':' + in_channel;
+    this._pubClient.publish(requestChannel, JSON.stringify(data));
   },
 
   _response: function(in_channel){
