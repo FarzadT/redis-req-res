@@ -11,14 +11,16 @@ function RedisReqRes (in_redisConfig) {
 
   this._callbacks = {};
 
+  // List of intervals mapped to a specific channel.
+  // NOTE: These intervals are used to set an expiration date on the keys
+  //       added to the set.
+  this._intervals = {};
+
   var that = this;
   // Clean up the key entry.
+  this._setExpiration(this._pipeGuid);
   setInterval(function(){
-    that._pubClient.expire([that._pipeGuid, 5*60], function(error, res){
-      if(error){
-        console.error('Redis-Req-Res ERROR: ',error);
-      }
-    });
+    that._setExpiration(that._pipeGuid);
   },4*60*1000);
 };
 
@@ -50,14 +52,27 @@ RedisReqRes.prototype = {
 
     this._subClient.subscribe(channel);
 
+    that._pubClient.sadd([channel, this._myGuid]);
+
+
     this._callbacks[channel] = in_callback;
+
+    that._setExpiration(channel);
+    this._intervals[channel] = setInterval(function(){
+      that._setExpiration(channel);
+    },4*60*1000);
   },
 
   off: function(in_channel){
     var channel = this._pipeGuid+':'+in_channel;
     
     delete this._callbacks[channel];
-    
+
+    this._pubClient.srem([channel, this._myGuid]);
+
+    clearInterval(this._intervals[channel]);
+    delete this._intervals[channel];
+
     this._subClient.unsubscribe(channel);
   },
 
@@ -73,7 +88,7 @@ RedisReqRes.prototype = {
     var reply = 0;
       
     this.on(responseChannel, function(error, data){
-      that._pubClient.scard([this._pipeGuid], function(error, replies){
+      that._pubClient.scard([requestChannel], function(error, replies){
         reply++;
         if(reply === replies){
           that.off(responseChannel);
@@ -116,6 +131,14 @@ RedisReqRes.prototype = {
         }
       }
     }
+  },
+
+  _setExpiration: function(key){
+    this._pubClient.expire([key, 5*60], function(error, res){
+      if(error){
+        console.error('Redis-Req-Res ERROR: ',error);
+      }
+    });
   }
 };
 
