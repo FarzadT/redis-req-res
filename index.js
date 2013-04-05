@@ -11,14 +11,15 @@ function RedisReqRes (in_redisConfig) {
 
   this._callbacks = {};
 
-  var exitEvents = ['SIGHUP', 'SIGINT', 'SIGTERM', 'exit', 'uncaughtException'];
-
   var that = this;
-  for(var i in exitEvents){
-    process.on(exitEvents[i], function(){
-      that._pubClient.srem([that._pipeGuid, that._myGuid]);
+  // Clean up the key entry.
+  setInterval(function(){
+    that._pubClient.expire([that._pipeGuid, 5*60], function(error, res){
+      if(error){
+        console.error('Redis-Req-Res ERROR: ',error);
+      }
     });
-  }
+  },4*60*1000);
 };
 
 RedisReqRes.prototype = {
