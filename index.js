@@ -76,7 +76,7 @@ RedisReqRes.prototype = {
     this._subClient.unsubscribe(channel);
   },
 
-  request: function(in_channel, in_data, in_callback){
+  request: function(in_channel, in_data, in_callback, in_returnFirstResponse){
     in_data = in_data || {};
 
     var responseChannel = 'RESPONSE:' + guid.new();
@@ -96,6 +96,10 @@ RedisReqRes.prototype = {
       });
 
       in_callback(error, data);
+
+      if(in_returnFirstResponse){
+        that.off(responseChannel);
+      }
     });
 
     var requestChannel = this._pipeGuid + ':' + in_channel;
