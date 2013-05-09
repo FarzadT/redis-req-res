@@ -76,14 +76,6 @@ RedisReqRes.prototype = {
     this._subClient.unsubscribe(channel);
   },
 
-  /*
-  * Send an arbitrary message without waiting for a response.
-  */
-  sendMessage: function(in_channel, in_data, in_error){
-    var data = {data: in_data, error: in_error};
-    this._pubClient.publish(this._pipeGuid + ':' + in_channel, JSON.stringify(data));
-  },
-
   request: function(in_channel, in_data, in_callback, in_returnFirstResponse){
     in_data = in_data || {};
 
