@@ -1,6 +1,10 @@
 var redis = require('redis');
 var guid  = require('node-guid');
 
+var REQUEST_PREFIX = 'REQUEST';
+var RESPONSE_PREFIX = 'RESPONSE';
+var MESSAGE_PREFIX  = 'MESSAGE';
+
 function RedisReqRes (in_redisConfig) {
   this._pubClient = redis.createClient(in_redisConfig.port, in_redisConfig.host, in_redisConfig.options);
   this._subClient = redis.createClient(in_redisConfig.port, in_redisConfig.host, in_redisConfig.options);
@@ -63,6 +67,14 @@ RedisReqRes.prototype = {
     },4*60*1000);
   },
 
+  /*
+  * Send an arbitrary message without waiting for a response.
+  */
+  sendMessage: function(in_channel, in_data, in_error){
+    var data = {data: in_data, error: error};
+    this._pubClient.publish(this._pipeGuid + ':' + MESSAGE_PREFIX + ':' + in_channel, JSON.stringify(data));
+  },
+
   off: function(in_channel){
     var channel = this._pipeGuid+':'+in_channel;
     
@@ -79,7 +91,7 @@ RedisReqRes.prototype = {
   request: function(in_channel, in_data, in_callback, in_returnFirstResponse){
     in_data = in_data || {};
 
-    var responseChannel = 'RESPONSE:' + guid.new();
+    var responseChannel = RESPONSE_PREFIX + ':' + guid.new();
 
     var data = {query: in_data, responseChannel: responseChannel};
 
@@ -102,7 +114,7 @@ RedisReqRes.prototype = {
       }
     });
 
-    var requestChannel = this._pipeGuid + ':' + in_channel;
+    var requestChannel = this._pipeGuid + ':' + REQUEST_PREFIX + ':' + in_channel;
     this._pubClient.publish(requestChannel, JSON.stringify(data));
   },
 
@@ -120,20 +132,40 @@ RedisReqRes.prototype = {
     return new response(in_channel);
   },
 
-  _handleRequest : function(in_channel, in_data){
+  _handleRequest: function(in_channel, in_data){
     if(in_channel.indexOf(this._pipeGuid) !== -1){
-      if(in_channel.indexOf(':RESPONSE:') === -1){
-        var data = JSON.parse(in_data);
-        var req = {query: data.query};
-        var res = this._response(data.responseChannel);
-
-        this._callbacks[in_channel](req, res);
-      }else{
-        if(this._callbacks[in_channel]){
+      switch(this._parseChannel(in_channel)){
+        case MESSAGE_PREFIX:
+          in_channel = in_channel.replace(':'+MESSAGE_PREFIX,'');
+        case RESPONSE_PREFIX:
+          if(this._callbacks[in_channel]){
+            var data = JSON.parse(in_data);
+            this._callbacks[in_channel](data.error, data.data);
+          }
+          break;
+        case REQUEST_PREFIX:
           var data = JSON.parse(in_data);
-          this._callbacks[in_channel](data.error, data.data);
-        }
+          var req = {query: data.query};
+          var res = this._response(data.responseChannel);
+
+          in_channel = in_channel.replace(':'+REQUEST_PREFIX,'');
+          this._callbacks[in_channel](req, res);
+          break;
       }
+    }
+  },
+
+  _parseChannel: function(in_channel){
+    if(in_channel.indexOf(':'+ RESPONSE_PREFIX +':') !== -1){
+      return RESPONSE_PREFIX;
+    }
+
+    if(in_channel.indexOf(':'+ REQUEST_PREFIX +':') !== -1){
+      return REQUEST_PREFIX;
+    }
+
+    if(in_channel.indexOf(':'+ MESSAGE_PREFIX +':') !== -1){
+      return MESSAGE_PREFIX;
     }
   },
 
