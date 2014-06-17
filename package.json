@@ -1,6 +1,6 @@
 {
     "name": "redis-req-res"
-  , "version": "0.0.1"
+  , "version": "0.0.2"
   , "description": "Request/Respons Redis pubsub wrapper"
   , "keywords": ["redis", "pub", "sub", "request", "response"]
   , "repository" :
@@ -9,7 +9,7 @@
     }
   , "author": "Farzad Towhidi"
   , "dependencies": {
-    "redis"       : "git://github.com/Reregistered/node_redis.git",
+    "redis"       : "0.10.3",
     "node-guid"   : "0.0.1"
   }
   , "main": "index"
